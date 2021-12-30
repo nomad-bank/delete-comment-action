@@ -12,45 +12,27 @@ async function run(): Promise<void> {
 
     const octokit = github.getOctokit(token)
 
-    const issues = []
+    const resp = await octokit.pulls.listReviewComments({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      pull_number: Number(issueNumber)
+    })
 
-    if (issueNumber) {
-      issues.push(issueNumber)
-    } else {
-      const allIssues = await octokit.paginate(
-        'GET /repos/:owner/:repo/issues?state=all',
-        {
-          owner: github.context.repo.owner,
-          repo: github.context.repo.repo
-        }
+    const comments = resp.data.filter(it => it.user?.login === userName)
+
+    for (const comment of comments) {
+      console.log(
+        `Processing issue ${comment.pull_request_url} user: ${comment.user} comment: ${comment.body_text}`
       )
 
-      issues.push(...allIssues)
-    }
-
-    for (const issue of issues) {
-      const resp = await octokit.issues.listComments({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: (issue as any)['number']
-      })
-
-      const comments = resp.data.filter(it => it.user?.login === userName)
-
-      for (const comment of comments) {
-        console.log(
-          `Processing issue ${comment.issue_url} user: ${comment.user} comment: ${comment.body_text}`
-        )
-
-        await octokit.request(
-          'DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}',
-          {
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            comment_id: comment.id
-          }
-        )
-      }
+      await octokit.request(
+        'DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}',
+        {
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          comment_id: comment.id
+        }
+      )
     }
   } catch (error) {
     console.error(error)
