@@ -15,10 +15,13 @@ async function run(): Promise<void> {
     const resp = await octokit.pulls.listReviewComments({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
-      pull_number: Number(issueNumber)
+      pull_number: Number(issueNumber),
+      per_page: 100
     })
 
     const comments = resp.data.filter(it => it.user?.login === userName)
+
+    console.log(`Deleting ${comments.length} comments from ${userName}...`)
 
     for (const comment of comments) {
       console.log(
@@ -34,7 +37,7 @@ async function run(): Promise<void> {
         }
       )
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(error)
     console.error(error.stack)
     core.setFailed(error.message)

@@ -48,9 +48,11 @@ function run() {
             const resp = yield octokit.pulls.listReviewComments({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
-                pull_number: Number(issueNumber)
+                pull_number: Number(issueNumber),
+                per_page: 100
             });
             const comments = resp.data.filter(it => { var _a; return ((_a = it.user) === null || _a === void 0 ? void 0 : _a.login) === userName; });
+            console.log(`Deleting ${comments.length} comments from ${userName}...`);
             for (const comment of comments) {
                 console.log(`Processing issue ${comment.pull_request_url} user: ${comment.user} comment: ${comment.body_text}`);
                 yield octokit.request('DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}', {
